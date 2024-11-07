@@ -4,15 +4,16 @@ import PokemonCard from "@src/components/PokemonCard";
 import SearchBar from "@src/components/SearchBar";
 import { getPokemonCards } from "@src/services/pokemon-tcg/pokemon-tcg.actions";
 import { PokemonCardInterface } from "@src/services/pokemon-tcg/pokemon-tcg.types";
-import { checkAuth } from "@src/utils/check-auth";
+import { checkAuth } from "@src/helpers/checkAuth";
 import { useEffect, useState } from "react";
 import { useRouter } from 'next/navigation';
+import { loadFavorites, saveFavorites } from "@src/helpers/localStorage";
 
 
 export default function Page() {
     const router = useRouter();
     const [cards, setCards] = useState<PokemonCardInterface[]>([]);
-
+    const [favorites, setFavorites] = useState<string[]>(loadFavorites());
 
     const handleSearch = async (searchTerm: string) => {
         try {
@@ -21,6 +22,15 @@ export default function Page() {
         } catch (error) {
           console.error('Erro ao buscar cartas:', error);
         }
+    };
+
+    const toggleFavorite = (cardId: string) => {
+      const updatedFavorites = favorites.includes(cardId)
+        ? favorites.filter((fav) => fav !== cardId)
+        : [...favorites, cardId];
+  
+      setFavorites(updatedFavorites);
+      saveFavorites(updatedFavorites);
     };
 
     useEffect(() => {
@@ -32,22 +42,31 @@ export default function Page() {
     }, [])
 
     return (
-        <main>
-            <h1>Pokemon TCG Explorer</h1>
+        <main className="py-10 text-center">
+            <h1 className="text-2xl">Pokemon TCG Explorer</h1>
 
             <SearchBar onSearch={handleSearch} />
 
             <div className="flex flex-wrap justify-center gap-8 my-8">
               {cards.map((card) => {
                   return (
+                    <div key={card.id} className="relative">
+                      <button
+                        onClick={() => toggleFavorite(card.id)}
+                        className={`absolute top-2 right-2 text-2xl z-10 ${
+                          favorites.includes(card.id) ? 'text-yellow-500' : 'text-gray-400'
+                        }`}
+                      >
+                        {favorites.includes(card.id) ? '★' : '☆'}
+                      </button>
                       <PokemonCard
-                          key={card.id}
                           id={card.number}
                           name={card.name}
                           hp={card.hp}
                           imageUrl={card.images.large}
                           type={card.types.toString()}
                       />
+                    </div>
                   )
               })}
             </div>
